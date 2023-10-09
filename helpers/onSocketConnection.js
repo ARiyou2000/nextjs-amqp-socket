@@ -1,60 +1,56 @@
-import amqp from "amqplib";
+const mqtt = require("mqtt");
 
+const protocol = 'tcp'
+const host = '192.168.1.137'
+const port = '1883'
+const clientId = `mqtt_${Math.random().toString(16).slice(3)}`
 
-const amqpPublish = async (value) => {
-    try {
-        // const amqpServer = "amqp://localhost:15672"
-        const amqpServer = "amqps://dpsiqljr:O-y2ULFY3ZQaCxIPqKSo0zfkkrITjT9J@hawk.rmq.cloudamqp.com/dpsiqljr"
-        const connection = await amqp.connect(amqpServer)
-        const channel = await connection.createChannel();
-        await channel.assertQueue("jobs");
-        await channel.sendToQueue("jobs", Buffer.from(JSON.stringify(value)))
-        console.log(`Job sent successfully ${value}`);
-        await channel.close();
-        await connection.close();
-    } catch (ex) {
-        console.error(ex)
-    }
+const connectUrl = `${protocol}://${host}:${port}`
+
+const mqttConnectionOptions = {
+    clientId,
+    clean: true,
+    connectTimeout: 4000,
+    username: 'emqx',
+    password: 'public',
+    reconnectPeriod: 1000,
 }
 
-const amqpToSocket = async (socketInstance) => {
+const mqttPublish = async ({topic, message}) => {
+    console.log("message to publish: ", {topic, message})
     try {
-        // const amqpServer = "amqp://localhost:15672"
-        const amqpServer = "amqps://dpsiqljr:O-y2ULFY3ZQaCxIPqKSo0zfkkrITjT9J@hawk.rmq.cloudamqp.com/dpsiqljr"
-        const connection = await amqp.connect(amqpServer)
-        const channel = await connection.createChannel();
-        await channel.assertQueue("jobs");
-
-        channel.consume("jobs", message => {
-            const input = JSON.parse(message.content.toString());
-            console.log(`Received job with input ${input}`)
-            socketInstance.broadcast.emit("receiveDeviceData", input);
-            //"7" == 7 true
-            //"7" === 7 false
-
-            // if (input.number == 7)
-            //     channel.ack(message);
-        })
-
-        console.log("Waiting for messages...")
-
+        const client = mqtt.connect(connectUrl, mqttConnectionOptions);
+        client.publish(topic, message);
     } catch (ex) {
-        console.error(ex)
+        console.error(ex);
     }
-}
-
-const registerOnConnection = (io, socket) => {
-
-    amqpToSocket(socket)
-
-    const sendDeviceData = (msg) => {
-        console.log("New message", msg);
-        socket.broadcast.emit("receiveDeviceData", msg)
-        amqpPublish(msg)
-    };
-
-    socket.on("sendDeviceData", sendDeviceData);
-    // socket.on("sendDeviceData", amqpPublish);
 };
 
-export default registerOnConnection
+const mqttToSocket = async (socketInstance) => {
+    try {
+        const client = mqtt.connect(connectUrl, mqttConnectionOptions)
+
+        client.on('connect', () => {
+            console.log('! ! ! ! ! ! ! ! ! ! ! Connected ! ! ! ! ! ! ! ! ! ! !')
+        })
+
+        client.on("message", (topic, message) => {
+            // message is Buffer
+            socketInstance.broadcast.emit("receiveDeviceData", {topci, message});
+            console.log(message.toString());
+        });
+    } catch (ex) {
+        console.error(ex);
+    }
+};
+
+const registerOnConnection = (io, socket) => {
+    mqttToSocket(socket);
+
+    socket.on("sendDeviceData", mqttPublish);
+    socket.on("close", (reason) => {
+        console.error("Socket Closed: ", reason);
+    });
+};
+
+export default registerOnConnection;
