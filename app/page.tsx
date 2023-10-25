@@ -4,6 +4,8 @@
 
 import {MutableRefObject, useCallback, useEffect, useRef, useState} from "react";
 import io, {Socket} from "socket.io-client";
+import initSocket from "@/utils/initSocket";
+import connectionConfig from "@/connection.config";
 // import api from './ws-client';
 
 
@@ -42,10 +44,10 @@ export default function Home() {
 
     const socketInitializer = useCallback(async () => {
             // We call this just to make sure we turn on the websocket server
-            await fetch("/api/socket");
+            await initSocket();
 
             socket.current = io(undefined, {
-                path: "/my_socket_key",
+                path: connectionConfig.socket.key,
             });
 
             socket.current.on("connect", () => {

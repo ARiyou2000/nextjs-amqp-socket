@@ -1,5 +1,6 @@
 import {Server} from "socket.io";
 import onSocketConnection from "@/helpers/onSocketConnection";
+import connectionConfig from "@/connection.config";
 
 export default function handler(req, res) {
     // console.log("res.socket", res.socket.server.io)
@@ -11,22 +12,13 @@ export default function handler(req, res) {
     }
 
     const io = new Server(res.socket.server, {
-        path: "/my_socket_key",
+        path: connectionConfig.socket.key,
     });
     res.socket.server.io = io;
 
-    const onConnection = (socket) => {
-        console.log("New connection", socket.id);
-        socket.on("disconnect", (reason) => {
-            // ...
-            console.log("<--------- socket disconnected --------->")
-        });
-        onSocketConnection(io, socket);
-    };
-
-    io.on("connection", onConnection);
-
-    // io.on("disconnect",)
+    io.on("connection", (socket) => {
+        onSocketConnection(io, socket)
+    });
 
     console.log("Socket server started successfully!");
     res.end();
