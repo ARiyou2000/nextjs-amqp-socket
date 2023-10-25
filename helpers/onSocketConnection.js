@@ -8,7 +8,7 @@ const clientId = `clientId`
 
 const connectUrl = `${protocol}://${host}:${port}`
 
-const testTopic = "zigbee2mqtt/0xa4c1381c25a1daf0"
+const testTopic = "zigbee2mqtt/#"
 const mqttConnectionOptions = {
     clientId,
     clean: true,
@@ -18,7 +18,7 @@ const mqttConnectionOptions = {
     reconnectPeriod: 1000,
 }
 
-const mqttPublish = async ({topic, message}) => {
+export const mqttPublish = async ({topic, message}) => {
     console.log("message to publish: ", {topic, message})
     try {
         const client = mqtt.connect(connectUrl);

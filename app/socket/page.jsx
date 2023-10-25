@@ -15,7 +15,7 @@ export default function Home() {
             await fetch("/api/socket");
 
             socket = io(undefined, {
-                path: "/api/my_awesome_socket",
+                path: "/my_socket_key",
             });
 
             socket.on("connect", () => {
