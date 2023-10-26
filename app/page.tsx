@@ -1,81 +1,12 @@
-/** Add your relevant code here for the issue to reproduce */
-
 "use client";
 
-import {MutableRefObject, useCallback, useEffect, useRef, useState} from "react";
-import io, {Socket} from "socket.io-client";
-import initSocket from "@/utils/initSocket";
-import connectionConfig from "@/connection.config";
-// import api from './ws-client';
+import {useState} from "react";
+import useSocket from "@/hooks/useSocket";
 
-
-// let socket;
-
-// api.connect();
-
-interface ServerToClientEvents {
-    noArg: () => void;
-    basicEmit: (a: number, b: string, c: Buffer) => void;
-    withAck: (d: string, callback: (e: number) => void) => void;
-}
-
-interface ClientToServerEvents {
-    hello: () => void;
-}
-
-interface InterServerEvents {
-    ping: () => void;
-}
-
-interface SocketData {
-    name: string;
-    age: number;
-}
 
 export default function Home() {
-    const [deviceTopic, setDeviceTopic] = useState("")
-    const [deviceValue, setDeviceValue] = useState("");
-    const socket: MutableRefObject<null | Socket<ServerToClientEvents, ClientToServerEvents>> = useRef(null)
 
-    const socketInitializer = useCallback(async () => {
-            // We call this just to make sure we turn on the websocket server
-            await initSocket();
-
-            socket.current = io(undefined, {
-                path: connectionConfig.socket.key,
-            });
-
-            socket.current.on("connect", () => {
-                console.log("Socket Connected", socket.current?.id);
-            });
-
-            socket.current.on("receiveDeviceData", ({topic, message}) => {
-                console.log("New message in client", message);
-
-                setDeviceTopic(topic)
-                setDeviceValue(message);
-            });
-
-            socket.current?.on("disconnect", () => {
-                console.log("! ! ! ! ! ! ! socket disconnected ! ! ! ! ! ! !")
-            })
-        }, []
-    )
-
-    useEffect(() => {
-        if (!socket.current) {
-            console.log("init socket")
-            console.log(socket.current)
-            socketInitializer();
-        }
-
-        return () => {
-            console.log("Exit")
-            socket.current?.disconnect()
-            socket.current?.close()
-        }
-    }, []);
-
+    const [deviceTopic, deviceValue] = useSocket()
     const [deviceId, setDeviceId] = useState("0xa4c1381c25a1daf0");
     const [deviceRegister, setDeviceRegister] = useState("state_center")
     const [messageValue, setMessageValue] = useState("");
