@@ -33,13 +33,8 @@ interface SocketData {
 }
 
 export default function Home() {
-    const [value, setValue] = useState("");
-    const [switchStatus, setSwitchStatus] = useState({
-        linkquality: 0,
-        state_center: "OFF",
-        state_left: "OFF",
-        state_right: "OFF"
-    })
+    const [deviceTopic, setDeviceTopic] = useState("")
+    const [deviceValue, setDeviceValue] = useState("");
     const socket: MutableRefObject<null | Socket<ServerToClientEvents, ClientToServerEvents>> = useRef(null)
 
     const socketInitializer = useCallback(async () => {
@@ -54,10 +49,11 @@ export default function Home() {
                 console.log("Socket Connected", socket.current?.id);
             });
 
-            socket.current.on("receiveDeviceData", (msg) => {
-                console.log("New message in client", JSON.parse(msg.message));
-                setValue(JSON.stringify(msg));
-                setSwitchStatus(JSON.parse(msg.message))
+            socket.current.on("receiveDeviceData", ({topic, message}) => {
+                console.log("New message in client", message);
+
+                setDeviceTopic(topic)
+                setDeviceValue(message);
             });
 
             socket.current?.on("disconnect", () => {
@@ -80,12 +76,17 @@ export default function Home() {
         }
     }, []);
 
-    const [topicValue, setTopicValue] = useState("zigbee2mqtt/0xa4c1381c25a1daf0/set");
+    const [deviceId, setDeviceId] = useState("0xa4c1381c25a1daf0");
+    const [deviceRegister, setDeviceRegister] = useState("state_center")
     const [messageValue, setMessageValue] = useState("");
 
-    const handleTopicChange = (e) => {
+    const handleDeviceIdChange = (e) => {
         const value = e.target.value;
-        setTopicValue(value)
+        setDeviceId(value)
+    };
+    const handleDeviceRegisterChange = (e) => {
+        const value = e.target.value;
+        setDeviceRegister(value)
     };
     const handleMessageChange = (e) => {
         const value = e.target.value;
@@ -95,9 +96,9 @@ export default function Home() {
     const sendMessageHandler = async () => {
         // if (!socket.current) return;
         // socket.current.emit("sendDeviceData", );
-        fetch("/api/zigbee", {
+        fetch("/api/zigbee/device", {
             method: "POST", body: JSON.stringify(
-                {topic: topicValue, message: JSON.stringify({state_center: messageValue})}
+                {deviceId: deviceId, message: JSON.stringify({[deviceRegister]: messageValue})}
             )
         })
     };
@@ -107,16 +108,23 @@ export default function Home() {
             <main className="flex min-h-screen flex-col gap-8 items-center justify-start p-24 bg-pink-50">
 
                 <div
-                    className={"w-full h-full flex flex-col items-start justify-start gap-4 [&>p]:border-4 [&>p]:p-4 [&>p]:flex-1 [&>p]:w-full"}>
-                    <p>received message: {value}</p>
+                    className={"w-full h-full flex flex-col items-start justify-start gap-4 [&>p]:break-all [&>p]:border-4 [&>p]:p-4 [&>p]:flex-1 [&>p]:w-full"}>
+                    <p>received topic: {deviceTopic}</p>
+                    <p>received message: {deviceValue}</p>
                 </div>
 
                 <div className={"mt-auto"}>
                     <input
-                        value={topicValue}
-                        onChange={handleTopicChange}
+                        value={deviceId}
+                        onChange={handleDeviceIdChange}
                         className="w-full h-12 px-2 rounded"
-                        placeholder="Topic"
+                        placeholder="Device ID"
+                    />
+                    <input
+                        value={deviceRegister}
+                        onChange={handleDeviceRegisterChange}
+                        className="w-full h-12 px-2 rounded"
+                        placeholder="Register ID"
                     />
                     <input
                         value={messageValue}
@@ -125,6 +133,7 @@ export default function Home() {
                         placeholder="Message"
                     />
                 </div>
+
                 <button onClick={sendMessageHandler} className={"bg-amber-500 px-10 py-4 rounded-2xl"}>Send</button>
             </main>
             <button onClick={() => {

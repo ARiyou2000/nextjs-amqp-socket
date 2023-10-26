@@ -28,7 +28,7 @@ const mqttSubscribe = async (onMessage: (prop: mqttPacketType) => null) => {
         client.on("message", (topic, message) => {
             // console.log(`topic: ${topic}, message: ${message.toString()}`)
             // message is Buffer
-            onMessage({topic, message: message.toString()})
+            onMessage({topic: topic.replace(`${connectionConfig.mqtt.mainTopic}/`, ""), message: message.toString()})
         });
     } catch (ex) {
         console.error(ex);
