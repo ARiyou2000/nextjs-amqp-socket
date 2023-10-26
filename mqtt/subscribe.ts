@@ -1,6 +1,6 @@
 const mqtt = require("mqtt");
 import connectionConfig from "@/connection.config";
-import {mqttPacketType} from "@/mqtt/index";
+import {messageType, mqttPacketType, topicType} from "@/mqtt/index";
 
 const protocol = connectionConfig.mqtt.protocol
 const host = connectionConfig.mqtt.host
@@ -25,7 +25,7 @@ const mqttSubscribe = async (onMessage: (prop: mqttPacketType) => null) => {
             });
         })
 
-        client.on("message", (topic, message) => {
+        client.on("message", (topic: topicType, message: messageType) => {
             // console.log(`topic: ${topic}, message: ${message.toString()}`)
             // message is Buffer
             onMessage({topic: topic.replace(`${connectionConfig.mqtt.mainTopic}/`, ""), message: message.toString()})
